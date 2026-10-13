@@ -1,0 +1,47 @@
+modelo,variable,nombre,caida_media,caida_desv
+Extra Trees,renovable_pct_ant,Energía renovable (%),0.24771551445535245,0.014090122131604503
+Extra Trees,region_europa_asia_central,Región: Europa y Asia central,0.08630771174305171,0.008754464760358772
+Extra Trees,region_africa_subsahariana,Región: África subsahariana,0.0725428391645802,0.005823004789553765
+Extra Trees,poblacion_log_ant,Población (log),0.0716909658982008,0.007468668705176814
+Extra Trees,pib_pc_log_ant,PIB per cápita (log),0.041987977736698864,0.004992098331402253
+Extra Trees,consumo_elec_pc_log_ant,Electricidad per cápita (log),0.040124333886085925,0.002774460057161813
+Extra Trees,co2_pc_log_ant,CO2 per cápita (log),0.026215386738662062,0.0060773449433898065
+Extra Trees,urbano_pct_ant,Población urbana (%),0.024252819538207737,0.004291760608329465
+Extra Trees,industria_pct_ant,Industria (% del PIB),0.02204205441507092,0.006308016756206806
+Extra Trees,region_america_latina_caribe,Región: América Latina y el Caribe,0.019453297198909793,0.0020640703991149454
+Extra Trees,region_medio_oriente_norte_africa,Región: Medio Oriente y norte de África,0.01603909119733765,0.005604488870782095
+Extra Trees,ingreso_alto,Ingreso alto,0.013321860824753761,0.004139522729139585
+Extra Trees,ingreso_medio_bajo,Ingreso medio bajo,0.010907883696197562,0.0031336250047503613
+Extra Trees,ingreso_medio_alto,Ingreso medio alto,0.01035040601635977,0.0029244548912951245
+Extra Trees,region_asia_oriental_pacifico,Región: Asia oriental y el Pacífico,0.010118390864400074,0.00157614361454846
+Extra Trees,energia_pc_log_ant,Energía per cápita (log),0.00766914420515743,0.0022828317238170756
+Extra Trees,var3_renovable_pp_ant,Variación renovable de 3 años (p.p.),0.004651081280011282,0.001460385311811126
+Extra Trees,ingreso_bajo,Ingreso bajo,0.003237842938645519,0.0004550552606229214
+Extra Trees,var_urbano_pp_ant,Variación de la población urbana (p.p.),0.0029188594026815285,0.00136931268217422
+Extra Trees,var_pib_pc_pct_ant,Variación del PIB per cápita (%),0.0023818287208935197,0.001904847491077748
+Extra Trees,anio_relativo,Año relativo,0.0,0.0
+Extra Trees,region_america_norte,Región: América del Norte,0.0,0.0
+Extra Trees,region_asia_sur,Región: Asia meridional,0.0,0.0
+Naive Bayes (base),renovable_pct_ant,Energía renovable (%),0.09345098734373411,0.013973081577865677
+Naive Bayes (base),industria_pct_ant,Industria (% del PIB),0.05149390564307173,0.01161537799417992
+Naive Bayes (base),urbano_pct_ant,Población urbana (%),0.033911501761403305,0.007659088806715384
+Naive Bayes (base),consumo_elec_pc_log_ant,Electricidad per cápita (log),0.008871844027004094,0.005883720693075328
+Naive Bayes (base),var_pib_pc_pct_ant,Variación del PIB per cápita (%),0.0013865855197094713,0.00642365372775284
+Naive Bayes (base),region_asia_oriental_pacifico,Región: Asia oriental y el Pacífico,0.0005595523581134798,0.0003663130051922941
+Naive Bayes (base),pib_pc_log_ant,PIB per cápita (log),0.00016229139292053273,0.0030882051003374746
+Naive Bayes (base),region_asia_sur,Región: Asia meridional,0.0,0.0
+Naive Bayes (base),ingreso_medio_alto,Ingreso medio alto,0.0,0.0
+Naive Bayes (base),region_america_norte,Región: América del Norte,0.0,0.0
+Naive Bayes (base),region_medio_oriente_norte_africa,Región: Medio Oriente y norte de África,-7.993605115906855e-05,0.0002398081534772056
+Naive Bayes (base),ingreso_bajo,Ingreso bajo,-7.993605115906855e-05,0.0002398081534772056
+Naive Bayes (base),var_urbano_pp_ant,Variación de la población urbana (p.p.),-7.993605115906855e-05,0.0004304688095231192
+Naive Bayes (base),ingreso_medio_bajo,Ingreso medio bajo,-0.00023980815347720563,0.0003663130051922941
+Naive Bayes (base),ingreso_alto,Ingreso alto,-0.00024562873972665543,0.0008112728019689515
+Naive Bayes (base),var3_renovable_pp_ant,Variación renovable de 3 años (p.p.),-0.000518046184831944,0.0034905193177594343
+Naive Bayes (base),region_america_latina_caribe,Región: América Latina y el Caribe,-0.0005595523581134798,0.0003663130051922941
+Naive Bayes (base),region_africa_subsahariana,Región: África subsahariana,-0.000559552358113502,0.0006243205176584098
+Naive Bayes (base),region_europa_asia_central,Región: Europa y Asia central,-0.0008851171489992038,0.0007617385111933925
+Naive Bayes (base),energia_pc_log_ant,Energía per cápita (log),-0.0010023777970368242,0.004362893056764069
+Naive Bayes (base),co2_pc_log_ant,CO2 per cápita (log),-0.0033114050626240066,0.004281818603036634
+Naive Bayes (base),anio_relativo,Año relativo,-0.0043119351212100865,0.0016030987370440294
+Naive Bayes (base),poblacion_log_ant,Población (log),-0.008323872604275362,0.003340980671468497

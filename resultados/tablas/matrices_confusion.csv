@@ -1,0 +1,19 @@
+modelo,etapa_real,etapa_predicha,proporcion
+Naive Bayes (base),Inicial,Inicial,0.6786570743405276
+Naive Bayes (base),Inicial,Intermedia,0.21103117505995203
+Naive Bayes (base),Inicial,Avanzada,0.11031175059952038
+Naive Bayes (base),Intermedia,Inicial,0.2743682310469314
+Naive Bayes (base),Intermedia,Intermedia,0.4981949458483754
+Naive Bayes (base),Intermedia,Avanzada,0.22743682310469315
+Naive Bayes (base),Avanzada,Inicial,0.18932038834951456
+Naive Bayes (base),Avanzada,Intermedia,0.1553398058252427
+Naive Bayes (base),Avanzada,Avanzada,0.6553398058252428
+Extra Trees,Inicial,Inicial,0.9664268585131894
+Extra Trees,Inicial,Intermedia,0.03117505995203837
+Extra Trees,Inicial,Avanzada,0.002398081534772182
+Extra Trees,Intermedia,Inicial,0.12274368231046931
+Extra Trees,Intermedia,Intermedia,0.855595667870036
+Extra Trees,Intermedia,Avanzada,0.021660649819494584
+Extra Trees,Avanzada,Inicial,0.009708737864077669
+Extra Trees,Avanzada,Intermedia,0.1262135922330097
+Extra Trees,Avanzada,Avanzada,0.8640776699029126

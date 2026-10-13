@@ -1,0 +1,65 @@
+{
+  "Naive Bayes (base)": {
+    "modelo__priors": "None",
+    "modelo__var_smoothing": "0.01",
+    "transf": "passthrough"
+  },
+  "Regresión logística": {
+    "modelo__C": "0.1",
+    "modelo__class_weight": "balanced"
+  },
+  "k-NN": {
+    "modelo__n_neighbors": "3",
+    "modelo__weights": "distance"
+  },
+  "Árbol de decisión": {
+    "class_weight": "None",
+    "max_depth": "None",
+    "min_samples_leaf": "1"
+  },
+  "Bosque aleatorio": {
+    "class_weight": "balanced",
+    "max_depth": "None",
+    "max_features": "sqrt",
+    "min_samples_leaf": "1"
+  },
+  "Extra Trees": {
+    "class_weight": "balanced",
+    "max_depth": "None",
+    "max_features": "0.5",
+    "min_samples_leaf": "1"
+  },
+  "Gradient Boosting": {
+    "learning_rate": "0.1",
+    "max_depth": "3",
+    "n_estimators": "200"
+  },
+  "Hist. Gradient Boosting": {
+    "class_weight": "balanced",
+    "l2_regularization": "1.0",
+    "learning_rate": "0.05",
+    "max_depth": "None"
+  },
+  "AdaBoost": {
+    "learning_rate": "1.0",
+    "n_estimators": "300"
+  },
+  "SVM RBF": {
+    "modelo__C": "10",
+    "modelo__class_weight": "None",
+    "modelo__gamma": "0.1"
+  },
+  "SVM lineal": {
+    "modelo__C": "10",
+    "modelo__class_weight": "balanced"
+  },
+  "LDA": {
+    "shrinkage": "auto",
+    "solver": "lsqr"
+  },
+  "Red neuronal MLP": {
+    "modelo__alpha": "0.001",
+    "modelo__hidden_layer_sizes": "(64, 32)"
+  },
+  "Clasificador trivial": {}
+}

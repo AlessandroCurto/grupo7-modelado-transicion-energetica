@@ -1,0 +1,8 @@
+# Librerías para ejecutar main.py y main.ipynb (Python 3.10 o superior)
+numpy>=1.26            # cálculo numérico y números al azar reproducibles
+pandas>=2.2            # tablas de datos (DataFrame)
+scikit-learn>=1.6      # modelos, preprocesamiento y métricas (AdaBoost cambió en la 1.6)
+scipy>=1.11            # prueba exacta de McNemar
+matplotlib>=3.8        # figuras del artículo
+joblib>=1.3            # guardar los modelos finales en resultados/modelos
+notebook>=7.0          # Jupyter Notebook, solo para abrir main.ipynb

@@ -1,0 +1,4 @@
+modelo,prob_maxima_mayor_099
+Naive Bayes (base),0.06777777777777778
+Regresión logística,0.021111111111111112
+Extra Trees,0.16555555555555557

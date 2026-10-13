@@ -1,0 +1,8 @@
+control,descripcion,resultado,detalle,critico
+C1,Al menos 11 modelos además del clasificador trivial,CUMPLE,13 modelos comparados,sí
+C2,Ningún predictor prohibido (no hay fuga de la etiqueta),CUMPLE,"23 predictores revisados, 0 prohibidos",sí
+C3,"Los años de entrenamiento, validación y prueba no se mezclan",CUMPLE,2004-2015 / 2016-2019 / 2020-2024,sí
+C4,Cada modelo calculó sus métricas de prueba una sola vez,CUMPLE,"18 modelos y variantes, 1 medición cada uno",sí
+C5,"Semillas fijas en modelos, remuestreos y agrupamiento",CUMPLE,"semilla 42 en scikit-learn, bootstrap y k-Means",sí
+C6,Todos los modelos superan al clasificador trivial,CUMPLE,"trivial: 0,333",no
+C7,Dos corridas dan exactamente las mismas métricas,CUMPLE,14 modelos reentrenados sin diferencia,sí
