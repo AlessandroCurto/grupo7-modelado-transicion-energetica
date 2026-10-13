@@ -54,16 +54,16 @@ tres decimales y los porcentajes con uno.
 | `RUIDO_DBSCAN` | 11 | países que DBSCAN marcó como ruido |
 | `CUMPLE` | cumple | el mejor modelo frente al criterio de éxito de 0,75 |
 | `FRASE_COMPARACION` | Los tres mejores fueron Extra Trees, Bosque aleatorio y Hist. Gradient Boosting, los tres ensambles de árboles; el más bajo de los trece fue Naive Bayes, con 0,611. | frase redactada con los resultados reales de esta corrida |
-| `FRASE_VALIDACION` | En nuestros datos el árbol llega al máximo de validación con profundidad 11 y después sigue mejorando en entrenamiento mientras la validación baja, que es sobreajuste; con profundidad 1 o 2 los dos aciertos son bajos, que es subajuste. | frase redactada con los resultados reales de esta corrida |
+| `FRASE_VALIDACION` | En nuestros datos el árbol llega al máximo de validación con profundidad 11 y después sigue mejorando en entrenamiento mientras la validación baja, que es sobreajuste; con profundidad 1 o 2 los dos aciertos son bajos, que es subajuste. En k-NN no hay punto intermedio: gana k = 1, porque el vecino más cercano de un país es él mismo en otro año en el 82,9 % de las filas de validación, de modo que un solo vecino equivale a repetir su última etapa conocida. | frase redactada con los resultados reales de esta corrida |
 | `FRASE_APRENDIZAJE` | En Naive Bayes la brecha es incluso negativa: no llega a sobreajustar, le falta capacidad, mientras que Extra Trees memoriza el entrenamiento y, aun así, generaliza mucho mejor. En los dos, la curva de validación casi no sube en la última mitad, así que más años del mismo tipo no cambiarían mucho el resultado. | frase redactada con los resultados reales de esta corrida |
 | `FRASE_CALIBRACION` | Naive Bayes quedó peor calibrado que la regresión logística: su pérdida logarítmica es 1,068 frente a 0,690, y se declara casi seguro (6,8 % de las filas por encima de 0,99) muchas más veces que ella (2,1 %). | frase redactada con los resultados reales de esta corrida |
-| `FRASE_ESCALADO` | A la SVM RBF el escalado le cambia la vida (+16,6 puntos al estandarizar); a k-NN con k = 15, en cambio, le sienta mal (-3,8 puntos), porque al estandarizar las once indicadoras de región y de ingreso pasan a pesar tanto como los indicadores continuos. El bosque aleatorio se mueve apenas 0,002 entre el mejor y el peor preprocesamiento. | frase redactada con los resultados reales de esta corrida |
+| `FRASE_ESCALADO` | A la SVM RBF el escalado le cambia la vida (+16,6 puntos al estandarizar); a k-NN con k = 15, en cambio, le sienta mal (-3,8 puntos): sin escalar, la distancia la deciden las dos variables de mayor escala, energía renovable (%) y población urbana (%), que además están entre las más informativas, y al estandarizar las once indicadoras 0/1 de región y de ingreso pasan a pesar igual que ellas. Lo comprobamos repitiendo k-NN estandarizado solo con los once indicadores continuos: sube a 0,727. En el bosque aleatorio la diferencia es de redondeo: entre un preprocesamiento y otro cambia de etapa como mucho 1 de las 720 filas de validación. | frase redactada con los resultados reales de esta corrida |
 | `FRASE_PCA_TSNE` | las tres etapas se superponen: se ve un gradiente de desarrollo económico, pero los países avanzados no forman una zona propia, porque la etiqueta depende de la matriz eléctrica y esa variable no está entre los once indicadores. | frase redactada con los resultados reales de esta corrida |
 | `FRASE_NB_DESEMPENO` | Con esa sencillez llegó a 0,611 de exactitud balanceada en prueba, 28,5 puntos por debajo de Extra Trees, y entrenarlo tomó menos de una centésima de segundo. | frase redactada con los resultados reales de esta corrida |
 | `EFECTO_VARIANTES_NB` | no ayudaron: la variante sin transformación y con los priors de los datos siguió siendo la mejor en validación (0,660), y las otras tres se quedaron entre 0,620 y 0,630 | frase redactada con los resultados reales de esta corrida |
-| `FRASE_VENTAJAS` | En nuestros datos el orden quedó claro: los ensambles de árboles ganan en exactitud y además dan las probabilidades más creíbles (Extra Trees tiene la menor pérdida logarítmica), mientras que Naive Bayes es el más barato de entrenar. | frase redactada con los resultados reales de esta corrida |
+| `FRASE_VENTAJAS` | En nuestros datos el orden quedó claro: los ensambles de árboles ganan en exactitud y además dan las probabilidades más creíbles (Extra Trees tiene la menor pérdida logarítmica), mientras que k-NN es el más barato de entrenar. | frase redactada con los resultados reales de esta corrida |
 | `FRASE_CRITERIO` | Con 0,895 de exactitud balanceada, Extra Trees cumple el criterio de 0,75 que nos fijamos, y reconoce el 86,4 % de los países avanzados. | frase redactada con los resultados reales de esta corrida |
-| `FRASE_CLUSTER` | el agrupamiento solo reproduce en parte las etapas (el mejor índice de Rand ajustado es 0,044), así que la etiqueta no se puede reemplazar por grupos encontrados sin ella. | frase redactada con los resultados reales de esta corrida |
+| `FRASE_CLUSTER` | el agrupamiento apenas reproduce las etapas (el mejor índice de Rand ajustado es 0,044) y DBSCAN, con el radio que calculamos, juntó a casi todos los países en un solo grupo y dejó 11 como ruido, de modo que ni siquiera tiene silueta que informar; la etiqueta no se puede reemplazar por grupos encontrados sin ella. | frase redactada con los resultados reales de esta corrida |
 | `FRASE_CONCLUSION_NB` | Es un resultado inferior al de Extra Trees, con un entrenamiento de menos de una centésima de segundo; su límite está en el supuesto de independencia y en unas probabilidades mal calibradas. | frase redactada con los resultados reales de esta corrida |
 
 ## 2. Tabla IV · Desempeño en validación (2016-2019) y prueba (2020-2024)
@@ -129,9 +129,33 @@ el resto, promedio macro. LL, F1-M, Exac. y AUC se miden en prueba.
 | Jerárquico Ward (k = 3) | 3 | 0 | 0,218 | 0,036 | 0,062 |
 | DBSCAN | 1 | 11 | - | -0,002 | 0,033 |
 
-DBSCAN se ejecutó con eps = 2,75 y min_samples = 5.
+ARI: índice de Rand ajustado; NMI: información mutua normalizada. DBSCAN se ejecutó con eps = 2,75 y min_samples = 5; formó un solo grupo y marcó 11 países como ruido, y la silueta necesita al menos dos grupos, por eso va un guion en esa celda.
 
 ## 7. Figuras
 
 Las nueve figuras están en `resultados/figuras/` con el nombre que las cita el
-artículo (fig02 a fig10), a 3,35 pulgadas de ancho y 300 ppp.
+artículo (fig02 a fig10), a 3,35 pulgadas de ancho y 300 ppp. La Fig. 1 del
+artículo es un esquema hecho a mano y no la genera este programa.
+
+## 8. Comprobaciones que respaldan las frases
+
+Resultados que no son marcadores del artículo, pero que sostienen lo que dicen
+`FRASE_ESCALADO` y `FRASE_VALIDACION`. Están en la consola de `main.py`.
+
+| Comprobación | Valor | Para qué |
+|---|---|---|
+| Variables que dominan la distancia sin escalar | Energía renovable (%) y Población urbana (%) | explican por qué k-NN sin escalar acierta más: son las de mayor desviación típica en los datos crudos |
+| k-NN (k = 15) estandarizado, solo con los 11 indicadores continuos | 0,727 | frente a 0,681 con los 23 predictores: confirma que las once indicadoras 0/1 son las que estorban |
+| Filas de validación en las que el bosque aleatorio cambia de etapa entre escalados | 1 de 720 | la diferencia entre escalados es redondeo de los puntos de corte, no un efecto real |
+| Filas de validación cuyo vecino más cercano es el mismo país en otro año | 82,9 % | explica que la curva de validación de k-NN gane con k = 1 |
+
+## 9. Ajustes sugeridos al texto fijo del artículo
+
+Tres frases del artículo afirman algo un poco más fuerte de lo que sostienen
+nuestros números. Son cambios de una o dos palabras.
+
+| Dónde | Dice | Proponemos |
+|---|---|---|
+| Sección IV-F | «El bosque aleatorio da **el mismo** resultado con todos los escalados» | «El bosque aleatorio da **prácticamente el mismo** resultado con todos los escalados» (cambia 1 de 720 filas) |
+| Tabla VIII, fila DBSCAN, columna Silueta | una cifra | un guion (–), porque DBSCAN formó un solo grupo y la silueta necesita al menos dos |
+| Pie de la Fig. 2 | «con intervalo de confianza del 95 %» | «con intervalo de confianza del 95 % en Naive Bayes, el mejor modelo y la regresión logística» (son los tres para los que se calculó) |

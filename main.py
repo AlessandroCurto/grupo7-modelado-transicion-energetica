@@ -356,6 +356,11 @@ def legible(columna: str) -> str:
     return NOMBRES_LEGIBLES.get(columna, columna)
 
 
+def en_minuscula(texto: str) -> str:
+    """Pone en minúscula la primera letra, para meter un nombre dentro de una frase."""
+    return texto[:1].lower() + texto[1:] if texto else texto
+
+
 def lista_y(nombres: list[str]) -> str:
     """['a','b','c'] -> 'a, b y c' (como se escribe una enumeración en español)."""
     if len(nombres) == 1:
@@ -962,6 +967,29 @@ def curvas_de_validacion(datos: dict) -> dict:
     return curvas
 
 
+def vecino_mas_cercano_del_mismo_pais(datos: dict) -> float:
+    """
+    ¿Por qué la curva de validación de k-NN es mejor con k = 1?
+
+    Para cada fila de validación buscamos su vecino más cercano entre los años
+    de entrenamiento (con las variables estandarizadas) y miramos si es el MISMO
+    país en otro año. Si casi siempre lo es, mirar un solo vecino equivale a
+    "repetir la última etapa conocida de ese país", que en un panel de países es
+    una predicción muy buena y explica que k = 1 gane.
+
+    Resultado esperado: una proporción alta, muy por encima de 1/180.
+    """
+    escalador = StandardScaler().fit(datos["X_tr"])
+    vecinos = NearestNeighbors(n_neighbors=1).fit(escalador.transform(datos["X_tr"]))
+    _, indices = vecinos.kneighbors(escalador.transform(datos["X_va"]))
+    paises_entrenamiento = datos["df_entrenamiento"]["codigo_iso3"].to_numpy()
+    paises_validacion = datos["df_validacion"]["codigo_iso3"].to_numpy()
+    proporcion = float((paises_entrenamiento[indices[:, 0]] == paises_validacion).mean())
+    nota(f"el vecino más cercano es el mismo país en {pct(proporcion)} de las filas "
+         "de validación")
+    return proporcion
+
+
 def curvas_de_aprendizaje(datos: dict, modelado: dict, mejor: str) -> dict:
     """
     La otra cara de la generalización: ¿ayudarían más datos?
@@ -1045,6 +1073,7 @@ def capitulo2_supervisado(datos: dict, modelado: dict, mejor: str) -> dict:
     """Responde con nuestros datos las preguntas del capítulo 2 de la guía."""
     seccion("PASO 6. CAPÍTULO 2 - APRENDIZAJE SUPERVISADO")
     return {"validacion": curvas_de_validacion(datos),
+            "vecino_mismo_pais": vecino_mas_cercano_del_mismo_pais(datos),
             "aprendizaje": curvas_de_aprendizaje(datos, modelado, mejor),
             "incertidumbre": incertidumbre_de_las_probabilidades(datos, modelado, mejor)}
 
@@ -1052,7 +1081,7 @@ def capitulo2_supervisado(datos: dict, modelado: dict, mejor: str) -> dict:
 # =============================================================================
 # PASO 7. CAPÍTULO 3 DE LA GUÍA: NO SUPERVISADO Y PREPROCESAMIENTO
 # =============================================================================
-def efecto_del_escalado(datos: dict) -> pd.DataFrame:
+def efecto_del_escalado(datos: dict) -> tuple[pd.DataFrame, dict]:
     """
     ¿A qué modelos les cambia la vida el preprocesamiento?
 
@@ -1061,8 +1090,23 @@ def efecto_del_escalado(datos: dict) -> pd.DataFrame:
     Yeo-Johnson) y se mide la exactitud balanceada en validación.
 
     Resultado esperado: k-NN y la SVM dependen mucho del escalado, porque miden
-    distancias; el bosque aleatorio da el mismo número con todos, porque sus
-    cortes solo dependen del orden de los valores.
+    distancias; el bosque aleatorio da prácticamente el mismo resultado con
+    todos, porque sus cortes solo dependen del orden de los valores.
+
+    Además devuelve tres comprobaciones que explican la tabla, para no dejar
+    ninguna afirmación sin respaldo:
+
+      * VARIABLES QUE MANDAN SIN ESCALAR: la desviación típica de cada predictor
+        en los datos crudos. La distancia de k-NN la deciden las variables con
+        números más grandes.
+      * k-NN SOLO CON LOS CONTINUOS: si al estandarizar k-NN empeora porque las
+        once indicadoras 0/1 de región y de ingreso pasan a pesar igual que los
+        indicadores, entonces al quitarlas debería recuperarse.
+      * FILAS QUE CAMBIAN EN EL BOSQUE: estandarizar, llevar a [0, 1] o aplicar
+        Yeo-Johnson no cambia el ORDEN de los valores dentro de una variable, así
+        que los cortes del árbol deberían ser los mismos. Contamos cuántas filas
+        de validación cambian de etapa predicha: si son muy pocas, la diferencia
+        es redondeo de los puntos de corte y no un efecto real del escalado.
     """
     nota("efecto del preprocesamiento en k-NN, SVM RBF y bosque aleatorio")
     escaladores = [("Sin escalar", None), ("Estandarizado", StandardScaler()),
@@ -1073,22 +1117,51 @@ def efecto_del_escalado(datos: dict) -> pd.DataFrame:
                                        random_state=SEMILLA),
                "Bosque aleatorio": RandomForestClassifier(n_estimators=300,
                                                           random_state=SEMILLA)}
-    filas = []
+    filas, predicciones_bosque = [], {}
     for etiqueta, escalador in escaladores:
         fila = {"preprocesamiento": etiqueta}
         for nombre, modelo in modelos.items():
             pasos = ([] if escalador is None else [("escalador", clone(escalador))])
             tuberia = Pipeline(pasos + [("modelo", clone(modelo))])
             tuberia.fit(datos["X_tr"], datos["y_tr"])
-            fila[nombre] = balanced_accuracy_score(datos["y_va"],
-                                                   tuberia.predict(datos["X_va"]))
+            prediccion = tuberia.predict(datos["X_va"])
+            fila[nombre] = balanced_accuracy_score(datos["y_va"], prediccion)
+            if nombre == "Bosque aleatorio":
+                predicciones_bosque[etiqueta] = prediccion
         filas.append(fila)
     tabla = pd.DataFrame(filas)
     guardar_tabla(tabla, "efecto_escalado.csv")
     ganancia = (tabla.loc[tabla["preprocesamiento"] == "Estandarizado", "k-NN (k = 15)"].iloc[0]
                 - tabla.loc[tabla["preprocesamiento"] == "Sin escalar", "k-NN (k = 15)"].iloc[0])
     nota(f"k-NN cambia {puntos(ganancia)} puntos al estandarizar")
-    return tabla
+
+    # --- Comprobación 1: ¿qué variables mandan cuando no se escala? ---------
+    desviaciones = pd.Series(datos["X_tr"].std(axis=0), index=PREDICTORES)
+    dominantes = list(desviaciones.nlargest(2).index)
+    nota("sin escalar, la distancia la dominan "
+         f"{lista_y([legible(v) for v in dominantes])}")
+
+    # --- Comprobación 2: k-NN estandarizado sin las indicadoras 0/1 ---------
+    columnas = [PREDICTORES.index(c) for c in CONTINUOS]
+    solo_continuos = Pipeline([("escalador", StandardScaler()),
+                               ("modelo", KNeighborsClassifier(n_neighbors=15))])
+    solo_continuos.fit(datos["X_tr"][:, columnas], datos["y_tr"])
+    eb_solo_continuos = balanced_accuracy_score(
+        datos["y_va"], solo_continuos.predict(datos["X_va"][:, columnas]))
+    nota(f"k-NN estandarizado solo con los {len(CONTINUOS)} indicadores continuos: "
+         f"{num(eb_solo_continuos)}")
+
+    # --- Comprobación 3: ¿cambia de verdad el bosque con el escalado? -------
+    sin_escalar = predicciones_bosque["Sin escalar"]
+    filas_cambian = max(int((prediccion != sin_escalar).sum())
+                        for etiqueta, prediccion in predicciones_bosque.items()
+                        if etiqueta != "Sin escalar")
+    nota(f"bosque aleatorio: como mucho {filas_cambian} de {len(sin_escalar)} filas de "
+         "validación cambian de etapa entre un escalado y otro")
+
+    extras = {"dominantes": dominantes, "eb_solo_continuos": eb_solo_continuos,
+              "filas_cambian_bosque": filas_cambian, "filas_validacion": len(sin_escalar)}
+    return tabla, extras
 
 
 def reduccion_de_dimensionalidad(datos: dict) -> dict:
@@ -1211,10 +1284,10 @@ def agrupamiento(reduccion: dict) -> dict:
 def capitulo3_no_supervisado(datos: dict) -> dict:
     """Responde con nuestros datos las preguntas del capítulo 3 de la guía."""
     seccion("PASO 7. CAPÍTULO 3 - NO SUPERVISADO Y PREPROCESAMIENTO")
-    escalado = efecto_del_escalado(datos)
+    escalado, escalado_extras = efecto_del_escalado(datos)
     reduccion = reduccion_de_dimensionalidad(datos)
-    return {"escalado": escalado, "reduccion": reduccion,
-            "agrupamiento": agrupamiento(reduccion)}
+    return {"escalado": escalado, "escalado_extras": escalado_extras,
+            "reduccion": reduccion, "agrupamiento": agrupamiento(reduccion)}
 
 
 # =============================================================================
@@ -1628,6 +1701,11 @@ def valores_para_paper(datos: dict, modelado: dict, evaluacion: dict,
     curvas_a = capitulo2["aprendizaje"]
     incertidumbre = capitulo2["incertidumbre"]
     escalado_tabla = capitulo3["escalado"].set_index("preprocesamiento")
+    extras = capitulo3["escalado_extras"]
+    vecino_mismo_pais = capitulo2["vecino_mismo_pais"]
+    # "1 de las 720 filas cambia" / "3 de las 720 filas cambian"
+    verbo_filas = "cambia" if extras["filas_cambian_bosque"] == 1 else "cambian"
+    dominantes_texto = lista_y([en_minuscula(legible(v)) for v in extras["dominantes"]])
     ganancia_knn = (escalado_tabla.loc["Estandarizado", "k-NN (k = 15)"]
                     - escalado_tabla.loc["Sin escalar", "k-NN (k = 15)"])
 
@@ -1664,8 +1742,6 @@ def valores_para_paper(datos: dict, modelado: dict, evaluacion: dict,
     nb_peor_calibrado = ll_nb > ll_rl
     brecha_nb_texto = ("incluso negativa: no llega a sobreajustar, le falta capacidad"
                        if brecha_nb < 0 else "muy pequeña: apenas sobreajusta")
-    rango_bosque = (escalado_tabla["Bosque aleatorio"].max()
-                    - escalado_tabla["Bosque aleatorio"].min())
     ari_km3 = float(tabla_grupos.loc["k-Means (k = 3)", "ari"])
 
     frases = {
@@ -1677,7 +1753,11 @@ def valores_para_paper(datos: dict, modelado: dict, evaluacion: dict,
             f"En nuestros datos el árbol llega al máximo de validación con profundidad "
             f"{curvas_v['Árbol de decisión']['mejor']} y después sigue mejorando en "
             f"entrenamiento mientras la validación baja, que es sobreajuste; con "
-            f"profundidad 1 o 2 los dos aciertos son bajos, que es subajuste."),
+            f"profundidad 1 o 2 los dos aciertos son bajos, que es subajuste. En k-NN no "
+            f"hay punto intermedio: gana k = 1, porque el vecino más cercano de un país es "
+            f"él mismo en otro año en el {pct(vecino_mismo_pais)} de las filas de "
+            f"validación, de modo que un solo vecino equivale a repetir su última etapa "
+            f"conocida."),
         "FRASE_APRENDIZAJE": (
             f"En Naive Bayes la brecha es {brecha_nb_texto}, mientras que "
             f"{nombre_corto(mejor)} memoriza el entrenamiento y, aun así, generaliza mucho "
@@ -1692,10 +1772,15 @@ def valores_para_paper(datos: dict, modelado: dict, evaluacion: dict,
         "FRASE_ESCALADO": (
             f"A la SVM RBF el escalado le cambia la vida ({puntos(ganancia_svm)} puntos al "
             f"estandarizar); a k-NN con k = 15, en cambio, le sienta mal "
-            f"({puntos(ganancia_knn)} puntos), porque al estandarizar las once indicadoras "
-            f"de región y de ingreso pasan a pesar tanto como los indicadores continuos. El "
-            f"bosque aleatorio se mueve apenas {num(rango_bosque)} entre el mejor y el peor "
-            f"preprocesamiento."),
+            f"({puntos(ganancia_knn)} puntos): sin escalar, la distancia la deciden las dos "
+            f"variables de mayor escala, {dominantes_texto}, que además están entre las más "
+            f"informativas, y al estandarizar las once indicadoras 0/1 de región y de "
+            f"ingreso pasan a pesar igual que ellas. Lo comprobamos repitiendo k-NN "
+            f"estandarizado solo con los once indicadores continuos: sube a "
+            f"{num(extras['eb_solo_continuos'])}. En el bosque aleatorio la diferencia es de "
+            f"redondeo: entre un preprocesamiento y otro {verbo_filas} de etapa como mucho "
+            f"{extras['filas_cambian_bosque']} de las {extras['filas_validacion']} filas de "
+            f"validación."),
         "FRASE_PCA_TSNE": (
             f"las tres etapas se superponen: se ve un gradiente de desarrollo económico, "
             f"pero los países avanzados no forman una zona propia, porque la etiqueta "
@@ -1718,9 +1803,12 @@ def valores_para_paper(datos: dict, modelado: dict, evaluacion: dict,
             f"criterio de 0,75 que nos fijamos, y reconoce el "
             f"{pct(float(fila_mejor['recall_avanzada']))} de los países avanzados."),
         "FRASE_CLUSTER": (
-            f"el agrupamiento solo reproduce en parte las etapas (el mejor índice de Rand "
-            f"ajustado es {num(max(tabla_grupos['ari']))}), así que la etiqueta no se "
-            f"puede reemplazar por grupos encontrados sin ella."),
+            f"el agrupamiento apenas reproduce las etapas (el mejor índice de Rand ajustado "
+            f"es {num(max(tabla_grupos['ari']))}) y DBSCAN, con el radio que calculamos, "
+            f"juntó a casi todos los países en un solo grupo y dejó "
+            f"{int(fila_dbscan['ruido'])} como ruido, de modo que ni siquiera tiene silueta "
+            f"que informar; la etiqueta no se puede reemplazar por grupos encontrados sin "
+            f"ella."),
         "FRASE_CONCLUSION_NB": (
             f"Es {'un resultado inferior' if diferencia_nb > 0 else 'un resultado superior'} "
             f"al de {nombre_corto(mejor)}, con un entrenamiento de {tiempo_nb}; su límite "
@@ -1873,10 +1961,53 @@ def valores_para_paper(datos: dict, modelado: dict, evaluacion: dict,
         tabla_md(tabla7),
         "", "## 6. Tabla VIII · Agrupamiento de los 180 países en 2024 frente a las etapas", "",
         tabla_md(tabla8),
-        f"", f"DBSCAN se ejecutó con eps = {str(agrupa['eps']).replace('.', ',')} y min_samples = 5.",
+        "",
+        f"ARI: índice de Rand ajustado; NMI: información mutua normalizada. DBSCAN se "
+        f"ejecutó con eps = {str(agrupa['eps']).replace('.', ',')} y min_samples = 5; "
+        f"formó un solo grupo y marcó {int(fila_dbscan['ruido'])} países como ruido, y la "
+        f"silueta necesita al menos dos grupos, por eso va un guion en esa celda.",
         "", "## 7. Figuras", "",
         "Las nueve figuras están en `resultados/figuras/` con el nombre que las cita el",
-        "artículo (fig02 a fig10), a 3,35 pulgadas de ancho y 300 ppp.",
+        "artículo (fig02 a fig10), a 3,35 pulgadas de ancho y 300 ppp. La Fig. 1 del",
+        "artículo es un esquema hecho a mano y no la genera este programa.",
+        "",
+        "## 8. Comprobaciones que respaldan las frases", "",
+        "Resultados que no son marcadores del artículo, pero que sostienen lo que dicen",
+        "`FRASE_ESCALADO` y `FRASE_VALIDACION`. Están en la consola de `main.py`.",
+        "",
+        "| Comprobación | Valor | Para qué |",
+        "|---|---|---|",
+        f"| Variables que dominan la distancia sin escalar | "
+        f"{lista_y([legible(v) for v in extras['dominantes']])} | "
+        f"explican por qué k-NN sin escalar acierta más: son las de mayor desviación "
+        f"típica en los datos crudos |",
+        f"| k-NN (k = 15) estandarizado, solo con los 11 indicadores continuos | "
+        f"{num(extras['eb_solo_continuos'])} | frente a "
+        f"{num(float(escalado_tabla.loc['Estandarizado', 'k-NN (k = 15)']))} con los 23 "
+        f"predictores: confirma que las once indicadoras 0/1 son las que estorban |",
+        f"| Filas de validación en las que el bosque aleatorio cambia de etapa entre "
+        f"escalados | {extras['filas_cambian_bosque']} de {extras['filas_validacion']} | "
+        f"la diferencia entre escalados es redondeo de los puntos de corte, no un efecto "
+        f"real |",
+        f"| Filas de validación cuyo vecino más cercano es el mismo país en otro año | "
+        f"{pct(vecino_mismo_pais)} | explica que la curva de validación de k-NN gane con "
+        f"k = 1 |",
+        "",
+        "## 9. Ajustes sugeridos al texto fijo del artículo", "",
+        "Tres frases del artículo afirman algo un poco más fuerte de lo que sostienen",
+        "nuestros números. Son cambios de una o dos palabras.",
+        "",
+        "| Dónde | Dice | Proponemos |",
+        "|---|---|---|",
+        f"| Sección IV-F | «El bosque aleatorio da **el mismo** resultado con todos los "
+        f"escalados» | «El bosque aleatorio da **prácticamente el mismo** resultado con "
+        f"todos los escalados» ({verbo_filas} {extras['filas_cambian_bosque']} de "
+        f"{extras['filas_validacion']} filas) |",
+        "| Tabla VIII, fila DBSCAN, columna Silueta | una cifra | un guion (–), porque "
+        "DBSCAN formó un solo grupo y la silueta necesita al menos dos |",
+        "| Pie de la Fig. 2 | «con intervalo de confianza del 95 %» | «con intervalo de "
+        "confianza del 95 % en Naive Bayes, el mejor modelo y la regresión logística» "
+        "(son los tres para los que se calculó) |",
         "",
     ]
     (CARPETA_REPORTES / "valores_para_paper.md").write_text("\n".join(lineas), encoding="utf-8")
